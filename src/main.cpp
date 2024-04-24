@@ -6,12 +6,15 @@
 #include "tiny_obj_loader.h"
 
 #include "Image.h"
+#include "Camera.h"
 #include "Material.h"
 #include "Shape.h"
 #include "Light.h"
 #include "Sphere.h"
 #include "Scene.h"
 #include "helpers.h"
+
+#define M_PI	3.14159265358979323846
 
 // This allows you to skip the `std::` in front of C++ standard library
 // functions. You can also say `using std::cout` to be more selective.
@@ -56,7 +59,7 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		false
 	);
 
-	if (scene_num == 1) {
+	if (scene_num == 1 || scene_num == 2) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(-0.5f, -1.0f, 1.0f), 1.0f, red, "red_sphere");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(0.5f, -1.0f, -1.0f), 1.0f, green, "green_sphere");
 		auto blue_sphere = make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, blue, "blue_sphere");
@@ -71,56 +74,81 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 	return scene;
 }
 
+glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, float start_t, float end_t) {
+	glm::vec3 color(0.0f, 0.0f, 0.0f);
+	shared_ptr<Hit> hit = scene->hit(ray, start_t, end_t);
+	if (hit != nullptr) {
+		color += hit->material->ambient;
+
+		glm::vec3 e = glm::normalize(cam.eye - hit->x);
+		for (auto light : scene->lights) {
+			glm::vec3 l = normalize(light->position - hit->x);
+			glm::vec3 h = glm::normalize(e + l);
+
+			Ray light_ray(hit->x, l);
+			bool pass = false;
+			for (int i = 0; i < scene->shapes.size(); i++) {
+				float light_dist = glm::length(light->position - hit->x);
+				auto h = scene->shapes.at(i)->intersect(light_ray, 1e-4, light_dist);
+				if (h != nullptr) {
+					pass = true;
+					break;
+				}
+			}
+
+			if (!pass) {
+				glm::vec3 cd = hit->material->diffuse * max(0.0f, glm::dot(hit->n, l));
+				glm::vec3 cs = hit->material->specular * pow(max(0.0f, glm::dot(hit->n, h)), hit->material->exponent);
+
+				color += light->intensity * (cd + cs);
+			}
+		}
+	}
+
+	if (color.r > 1) { color.r = 1.0f; }
+	if (color.g > 1) { color.g = 1.0f; }
+	if (color.b > 1) { color.b = 1.0f; }
+
+	return color;
+}
+
 int main(int argc, char **argv)
 {
-	//if(argc < 2) {
-	//	cout << "Usage: A1 meshfile" << endl;
-	//	return 0;
-	//}
-	//string meshName(argv[1]);
+	//int scene_num = stoi(argv[1]);
+	string filename = string(argv[4]);
 
-	
-	//auto shape = make_shared<Shape>(
-	//	glm::vec3(1.0f, 1.0f, 1.0f),
-	//	mat,
-	//	"benson"
-	//);
-	//shape->name = "bee";
+	Camera cam(
+		glm::vec3(0.0f, 0.0f, 5.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		45.0f * (M_PI / 180.0),
+		1.0f,
+		stoi(argv[2]),
+		stoi(argv[3])
+	);
 
-	//auto shape = make_shared<Sphere>(
-	//	glm::vec3(1.0f, 1.0f, 1.0f),
-	//	3.0f,
-	//	mat,
-	//	"hi"
-	//);
+	auto img = make_shared<Image>(cam.width, cam.height);
 
-	//vector<shared_ptr<Shape>> shapes;
+	auto scene = setup_scene(stoi(argv[1]));
 
-	//auto shape1 = make_shared<Sphere>();
-	//shape1->name = "sphere1";
+	float world_height = 2 * cam.focal_dist * tan(cam.fovy / 2);
+	float pixel_size = world_height / cam.height;
 
-	//auto shape2 = make_shared<Sphere>();
-	//shape2->position = glm::vec3(0.0f, 0.0f, -3.0f);
-	//shape2->radius = 2.0f;
-	//shape2->name = "sphere2";
+	for (int j = 0; j < cam.height; j++) {
+		for (int i = 0; i < cam.width; i++) {
+			float x = -cam.width / 2.0 + (i + 0.5);
+			float y = -cam.height / 2.0 + (j + 0.5);
 
-	//shapes.insert(shapes.end(), { shape1 });
+			glm::vec3 v = normalize(glm::vec3(pixel_size * x, pixel_size * y, -1.0));
 
-	//Ray r(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+			Ray r(cam.eye, v);
 
-	//for (shared_ptr<Shape> shape : shapes) {
-	//	auto h = shape->intersect(r, 0, 10);
-	//	if (h != nullptr) {
-	//		cout << h->name << ", " << h->t << endl;
-	//	}
-	//}
-
-	auto scene = setup_scene(1);
-
-	for (auto s : scene->shapes) {
-		cout << s->name << endl;
+			glm::vec3 color = 255.0f * compute_ray_color(scene, cam, r, 0, numeric_limits<float>::infinity());
+			img->setPixel(i, j, (int)color.r, (int)color.g, (int)color.b);
+		}
 	}
-	//cout << s->shapes.at(0)->name << endl;
+
+	img->writeToFile(filename);
 	
 	return 0;
 }

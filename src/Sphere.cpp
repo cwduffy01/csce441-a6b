@@ -26,9 +26,9 @@ shared_ptr<Hit> Sphere::intersect(Ray& r, float start_t, float end_t) {
 		if (t0 < start_t || t0 > end_t) { t0 = numeric_limits<float>::infinity(); }
 		if (t1 < start_t || t1 > end_t) { t1 = numeric_limits<float>::infinity(); }
 
-		cout << "t0 = " << t0 << " : " << (r.p + t0 * r.v) << endl;
-		cout << "t1 = " << t1 << " : " << (r.p + t1 * r.v) << endl;
-		std::cout << std::endl;
+		//cout << "t0 = " << t0 << " : " << (r.p + t0 * r.v) << endl;
+		//cout << "t1 = " << t1 << " : " << (r.p + t1 * r.v) << endl;
+		//std::cout << std::endl;
 
 		float t = fmin(t0, t1);
 		if (t == numeric_limits<float>::infinity()) { return nullptr; }
