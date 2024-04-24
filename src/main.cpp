@@ -69,6 +69,14 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		false
 	);
 
+	auto reflect = make_shared<Material>(
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		0.0f,
+		true
+	);
+
 	if (scene_num == 1 || scene_num == 2) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(-0.5f, -1.0f, 1.0f), 1.0f, red, "red_sphere");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(0.5f, -1.0f, -1.0f), 1.0f, green, "green_sphere");
@@ -96,8 +104,8 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		auto blue_sphere = make_shared<Sphere>(glm::vec3(1.0f, -0.7f, 0.0f), 0.3f, green, "blue_sphere");
 		auto floor = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "floor");
 		auto black_wall = make_shared<Plane>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 1.0f), black, "black_wall");
-		auto reflective_sphere_1 = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, red, "reflective_sphere_1");
-		auto reflective_sphere_2 = make_shared<Sphere>(glm::vec3(1.5f, 0.0f, -1.5f), 1.0f, red, "reflective_sphere_2");
+		auto reflective_sphere_1 = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, reflect, "reflective_sphere_1");
+		auto reflective_sphere_2 = make_shared<Sphere>(glm::vec3(1.5f, 0.0f, -1.5f), 1.0f, reflect, "reflective_sphere_2");
 
 		auto light1 = make_shared<Light>(glm::vec3(-1.0f, 2.0f, 1.0f), 0.5f);
 		auto light2 = make_shared<Light>(glm::vec3(0.5f, -0.5f, 0.0f), 0.5f);
@@ -110,7 +118,7 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 	return scene;
 }
 
-glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, float start_t, float end_t) {
+glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, float start_t, float end_t, int depth) {
 	glm::vec3 color(0.0f, 0.0f, 0.0f);
 	shared_ptr<Hit> hit = scene->hit(ray, start_t, end_t);
 	if (hit != nullptr) {
@@ -140,6 +148,12 @@ glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, floa
 			}
 		}
 		//color = 0.5f * hit->n + glm::vec3(0.5f, 0.5f, 0.5f);
+
+		if (hit->material->reflective && depth < 7) {
+			glm::vec3 ref_v = ray.v - (2 * glm::dot(ray.v, hit->n) * hit->n);
+			Ray reflect(hit->x, ref_v);
+			color += 0.7f * compute_ray_color(scene, cam, reflect, 1e-4, end_t, depth + 1);
+		}
 	}
 
 	if (color.r > 1) { color.r = 1.0f; }
@@ -194,7 +208,7 @@ int main(int argc, char **argv)
 
 			Ray r(cam.eye, v);
 
-			glm::vec3 color = 255.0f * compute_ray_color(scene, cam, r, 0, numeric_limits<float>::infinity());
+			glm::vec3 color = 255.0f * compute_ray_color(scene, cam, r, 0, numeric_limits<float>::infinity(), 0);
 			img->setPixel(i, j, (int)color.r, (int)color.g, (int)color.b);
 		}
 	}
