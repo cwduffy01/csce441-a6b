@@ -139,7 +139,7 @@ glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, floa
 				color += light->intensity * (cd + cs);
 			}
 		}
-		color = 0.5f * hit->n + glm::vec3(0.5f, 0.5f, 0.5f);
+		//color = 0.5f * hit->n + glm::vec3(0.5f, 0.5f, 0.5f);
 	}
 
 	if (color.r > 1) { color.r = 1.0f; }
