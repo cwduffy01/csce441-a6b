@@ -11,6 +11,8 @@
 #include "Shape.h"
 #include "Light.h"
 #include "Sphere.h"
+#include "Plane.h"
+#include "Ellipsoid.h"
 #include "Scene.h"
 #include "helpers.h"
 
@@ -59,6 +61,14 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		false
 	);
 
+	auto black = make_shared<Material>(
+		glm::vec3(0.1f, 0.1f, 0.1f),
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		0.0f,
+		false
+	);
+
 	if (scene_num == 1 || scene_num == 2) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(-0.5f, -1.0f, 1.0f), 1.0f, red, "red_sphere");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(0.5f, -1.0f, -1.0f), 1.0f, green, "green_sphere");
@@ -68,6 +78,32 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 
 		shapes.insert(shapes.end(), { red_sphere, green_sphere, blue_sphere });
 		lights.insert(lights.end(), { light });
+	}
+
+	if (scene_num == 3) {
+		auto red_ellipsoid = make_shared<Ellipsoid>(glm::vec3(0.5f, 0.0f, 0.5f), glm::vec3(0.5f, 0.6f, 0.2f), red, "red_ellipsoid");
+		auto green_sphere = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, green, "green_sphere");
+		auto plane = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "plane");
+
+		auto light1 = make_shared<Light>(glm::vec3(1.0f, 2.0f, 2.0f), 0.5f);
+		auto light2 = make_shared<Light>(glm::vec3(-1.0f, 2.0f, -1.0f), 0.5f);
+
+		shapes.insert(shapes.end(), { green_sphere, red_ellipsoid, plane });
+		lights.insert(lights.end(), { light1, light2 });
+	}
+	if (scene_num == 4 || scene_num == 5) {
+		auto red_sphere = make_shared<Sphere>(glm::vec3(0.5f, -0.7f, 0.5f), 0.3f, red, "red_sphere");
+		auto blue_sphere = make_shared<Sphere>(glm::vec3(1.0f, -0.7f, 0.0f), 0.3f, green, "blue_sphere");
+		auto floor = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "floor");
+		auto black_wall = make_shared<Plane>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 1.0f), black, "black_wall");
+		auto reflective_sphere_1 = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, red, "reflective_sphere_1");
+		auto reflective_sphere_2 = make_shared<Sphere>(glm::vec3(1.5f, 0.0f, -1.5f), 1.0f, red, "reflective_sphere_2");
+
+		auto light1 = make_shared<Light>(glm::vec3(-1.0f, 2.0f, 1.0f), 0.5f);
+		auto light2 = make_shared<Light>(glm::vec3(0.5f, -0.5f, 0.0f), 0.5f);
+
+		shapes.insert(shapes.end(), { red_sphere, blue_sphere, floor, black_wall, reflective_sphere_1, reflective_sphere_2 });
+		lights.insert(lights.end(), { light1, light2 });
 	}
 
 	auto scene = make_shared<Scene>(shapes, lights);
@@ -103,6 +139,7 @@ glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, floa
 				color += light->intensity * (cd + cs);
 			}
 		}
+		color = 0.5f * hit->n + glm::vec3(0.5f, 0.5f, 0.5f);
 	}
 
 	if (color.r > 1) { color.r = 1.0f; }
@@ -130,6 +167,20 @@ int main(int argc, char **argv)
 	auto img = make_shared<Image>(cam.width, cam.height);
 
 	auto scene = setup_scene(stoi(argv[1]));
+
+
+	//auto plane = scene->shapes.at(0);
+	//cout << plane->position << endl;
+	//Ray ray(
+	//	glm::vec3(0.0f, 0.0f, 0.0f),
+	//	glm::vec3(0.0f, -1.0f, 0.0f)
+	//);
+	//auto hit = plane->intersect(ray, 0, numeric_limits<float>::infinity());
+	//if (hit != nullptr) {
+	//	cout << hit->x << endl;
+	//}
+	
+
 
 	float world_height = 2 * cam.focal_dist * tan(cam.fovy / 2);
 	float pixel_size = world_height / cam.height;

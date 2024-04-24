@@ -2,7 +2,6 @@
 #define SPHERE_H
 
 #include "Shape.h"
-#include "Ray.h"
 
 class Sphere : public Shape {
 public:
