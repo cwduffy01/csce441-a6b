@@ -2,9 +2,7 @@
 #define HIT_H
 
 #include <glm/glm.hpp>
-#include "Shape.h"
 #include "Material.h"
-//#include <string>
 
 using namespace std;
 
@@ -18,13 +16,6 @@ public:
 	float t; // distance
 	shared_ptr<Material> material;
 	string name;
-
-	//glm::vec3 ambient;
-	//glm::vec3 diffuse;
-	//glm::vec3 specular;
-	//float exponent;
-	//bool reflective;
-	//string name;
 };
 
 #endif

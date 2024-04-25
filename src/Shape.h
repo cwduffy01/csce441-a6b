@@ -20,6 +20,7 @@ public:
 	Shape();
 	Shape(glm::vec3 position, shared_ptr<Material> material, string name);
 
+	// each subclass must define this function
 	virtual shared_ptr<Hit> intersect(Ray& r, float start_t, float end_t) = 0;
 };
 

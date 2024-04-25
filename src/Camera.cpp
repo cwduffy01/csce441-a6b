@@ -1,8 +1,8 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 eye, glm::vec3 lookat, glm::vec3 up, float fovy, float focal_dist, int width, int height) :
+Camera::Camera(glm::vec3 eye, glm::vec3 center, glm::vec3 up, float fovy, float focal_dist, int width, int height) :
 	eye(eye),
-	lookat(lookat),
+	center(center),
 	up(up),
 	fovy(fovy),
 	focal_dist(focal_dist),

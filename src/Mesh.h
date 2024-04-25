@@ -9,9 +9,11 @@ public:
 	vector<float> norBuf; // list of vertex normals
 	vector<float> texBuf; // list of vertex texture coords
 
+	// bounding sphere params
 	glm::vec3 b_pos;
 	float b_rad;
 
+	// transformation matrices
 	glm::mat4 E;
 	glm::mat4 E_inv;
 	glm::mat4 E_inv_tr;

@@ -1,73 +1,3 @@
-#include "Mesh.h"
-
-void Mesh::set_bounding_sphere() {
-    glm::vec3 bbox[2];
-
-    bbox[0] = glm::vec3(posBuf.at(0), posBuf.at(1), posBuf.at(2));
-    bbox[1] = glm::vec3(posBuf.at(0), posBuf.at(1), posBuf.at(2));
-
-    for (int i = 0; i < posBuf.size(); i += 3) {
-        float x = posBuf.at(i);
-        float y = posBuf.at(i + 1);
-        float z = posBuf.at(i + 2);
-
-        if (x < bbox[0].x) { bbox[0].x = x; }
-        if (y < bbox[0].y) { bbox[0].y = y; }
-        if (z < bbox[0].z) { bbox[0].z = z; }
-
-        if (x > bbox[1].x) { bbox[1].x = x; }
-        if (y > bbox[1].y) { bbox[1].y = y; }
-        if (z > bbox[1].z) { bbox[1].z = z; }
-    }
-
-    b_pos = glm::vec3((bbox[0].x + bbox[1].x) / 2, (bbox[0].y + bbox[1].y) / 2, (bbox[0].z + bbox[1].z) / 2);
-    b_rad = length(bbox[0] - b_pos);
-}
-
-Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf) : 
-	Shape(),
-	posBuf(posBuf),
-	norBuf(norBuf),
-	texBuf(texBuf),
-    E(1.0f)
-{
-    set_bounding_sphere();
-
-    E_inv = glm::inverse(E);
-    E_inv_tr = glm::transpose(E_inv);
-}
-
-Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::vec3 position, shared_ptr<Material> material, string name) :
-    Shape(position, material, name),
-    posBuf(posBuf),
-    norBuf(norBuf),
-    texBuf(texBuf),
-    E(1.0f)
-{
-    set_bounding_sphere();
-
-    E[3][0] = position.x;
-    E[3][1] = position.y;
-    E[3][2] = position.z;
-
-    E_inv = glm::inverse(E);
-    E_inv_tr = glm::transpose(E_inv);
-}
-
-Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::mat4 E, shared_ptr<Material> material, string name) :
-    Shape(glm::vec3(E * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), material, name),
-    posBuf(posBuf),
-    norBuf(norBuf),
-    texBuf(texBuf),
-    E(E)
-{
-    set_bounding_sphere();
-
-    E_inv = glm::inverse(E);
-    E_inv_tr = glm::transpose(E_inv);
-}
-
-
 /* Ray-Triangle Intersection Test Routines          */
 /* Different optimizations of my and Ben Trumbore's */
 /* code from journals of graphics tools (JGT)       */
@@ -164,18 +94,94 @@ int intersect_triangle3(double orig[3], double dir[3],
 }
 
 
-shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+
+
+#include "Mesh.h"
+
+// determine bounding sphere of mesh based on buffer geometry
+void Mesh::set_bounding_sphere() {
+    glm::vec3 bbox[2];  // mesh bounding box
+
+    bbox[0] = glm::vec3(posBuf.at(0), posBuf.at(1), posBuf.at(2));
+    bbox[1] = glm::vec3(posBuf.at(0), posBuf.at(1), posBuf.at(2));
+
+    // get corners of bounding box
+    for (int i = 0; i < posBuf.size(); i += 3) {
+        float x = posBuf.at(i);
+        float y = posBuf.at(i + 1);
+        float z = posBuf.at(i + 2);
+
+        if (x < bbox[0].x) { bbox[0].x = x; }
+        if (y < bbox[0].y) { bbox[0].y = y; }
+        if (z < bbox[0].z) { bbox[0].z = z; }
+
+        if (x > bbox[1].x) { bbox[1].x = x; }
+        if (y > bbox[1].y) { bbox[1].y = y; }
+        if (z > bbox[1].z) { bbox[1].z = z; }
+    }
+
+    // calculate bounding sphere
+    b_pos = glm::vec3((bbox[0].x + bbox[1].x) / 2, (bbox[0].y + bbox[1].y) / 2, (bbox[0].z + bbox[1].z) / 2);
+    b_rad = length(bbox[0] - b_pos);
+}
+
+Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf) : 
+	Shape(),
+	posBuf(posBuf),
+	norBuf(norBuf),
+	texBuf(texBuf),
+    E(1.0f)
+{
+    set_bounding_sphere();
+
+    E_inv = glm::inverse(E);
+    E_inv_tr = glm::transpose(E_inv);
+}
+
+Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::vec3 position, shared_ptr<Material> material, string name) :
+    Shape(position, material, name),
+    posBuf(posBuf),
+    norBuf(norBuf),
+    texBuf(texBuf),
+    E(1.0f)
+{
+    set_bounding_sphere();
+
+    E[3][0] = position.x;
+    E[3][1] = position.y;
+    E[3][2] = position.z;
+
+    E_inv = glm::inverse(E);
+    E_inv_tr = glm::transpose(E_inv);
+}
+
+Mesh::Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::mat4 E, shared_ptr<Material> material, string name) :
+    Shape(glm::vec3(E * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), material, name),
+    posBuf(posBuf),
+    norBuf(norBuf),
+    texBuf(texBuf),
+    E(E)
+{
+    set_bounding_sphere();
+
+    E_inv = glm::inverse(E);
+    E_inv_tr = glm::transpose(E_inv);
+}
+
+shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
+    // transform ray to local space
     glm::vec3 p_prime = E_inv * glm::vec4(r.p, 1.0f);
     glm::vec3 v_prime = glm::normalize(E_inv * glm::vec4(r.v, 0.0f));
 
+    // detect hit by bounding sphere
     glm::vec3 pc = p_prime - b_pos;
     float a = glm::dot(v_prime, v_prime);
     float b = 2 * glm::dot(v_prime, pc);
     float c = glm::dot(pc, pc) - pow(b_rad, 2);
     float d = pow(b, 2) - 4 * a * c;
-
-    float t_prime = -1.0;
 
     if (d > 0) {
         float t0 = (-b + sqrt(d)) / (2 * a);
@@ -184,10 +190,7 @@ shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
         if (t0 < start_t || t0 > end_t) { t0 = numeric_limits<float>::infinity(); }
         if (t1 < start_t || t1 > end_t) { t1 = numeric_limits<float>::infinity(); }
 
-        //cout << "t0 = " << t0 << " : " << (r.p + t0 * r.v) << endl;
-        //cout << "t1 = " << t1 << " : " << (r.p + t1 * r.v) << endl;
-        //std::cout << std::endl;
-
+        // exit if ray misses bounding sphere
         float t_circ = fmin(t0, t1);
         if (t_circ == numeric_limits<float>::infinity()) { return nullptr; }
 
@@ -200,6 +203,7 @@ shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
         double u;
         double v;
 
+        // check if ray intersects with each triangle in mesh
         for (int i = 0; i < posBuf.size(); i += 9) {
             double orig[3] = { p_prime.x, p_prime.y, p_prime.z };
             double dir[3]  = { v_prime.x, v_prime.y, v_prime.z };
@@ -208,27 +212,29 @@ shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
             double vert1[3] = { posBuf.at(i + 3), posBuf.at(i + 4), posBuf.at(i + 5) };
             double vert2[3] = { posBuf.at(i + 6), posBuf.at(i + 7), posBuf.at(i + 8) };
 
+            // if ray hits triangle
             if (intersect_triangle3(orig, dir, vert0, vert1, vert2, &t_prime, &u, &v) == 1 && t_prime < min_t_prime) {
                 min_t_prime = (float)t_prime;
-
                 min_x_prime = p_prime + (float)t_prime * v_prime;
 
                 glm::vec3 n0(norBuf.at(i + 0), norBuf.at(i + 1), norBuf.at(i + 2));
                 glm::vec3 n1(norBuf.at(i + 3), norBuf.at(i + 4), norBuf.at(i + 5));
                 glm::vec3 n2(norBuf.at(i + 6), norBuf.at(i + 7), norBuf.at(i + 8));
 
+                // calculate normal based on barycentric coords
                 min_n_prime = glm::normalize((float)(1 - u - v) * n0 + (float)u * n1 + (float)v * n2);
             }
         }
 
-        if (min_t_prime == numeric_limits<float>::infinity() || min_t_prime < start_t || min_t_prime > end_t) {
-            return nullptr;
-        }
+        // exit if ray doesn't hit triangle
+        if (min_t_prime == numeric_limits<float>::infinity() || min_t_prime < start_t || min_t_prime > end_t) { return nullptr; }
 
+        // transform back to world space
         glm::vec3 x = glm::vec3(E * glm::vec4(min_x_prime, 1.0f));
         glm::vec3 n = normalize(glm::vec3(E_inv_tr * glm::vec4(min_n_prime, 0.0f)));
         float t = length(x - r.p);
 
+        // return hit
         auto h = make_shared<Hit>(x, n, t, material, name);
         return h;
     }
