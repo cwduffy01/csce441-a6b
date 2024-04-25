@@ -116,6 +116,12 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		true
 	);
 
+	vector<float> posBuf;
+	vector<float> norBuf;
+	vector<float> texBuf;
+
+	load_mesh("../resources/bunny.obj", posBuf, norBuf, texBuf);
+
 	if (scene_num == 1 || scene_num == 2) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(-0.5f, -1.0f, 1.0f), 1.0f, red, "red_sphere");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(0.5f, -1.0f, -1.0f), 1.0f, green, "green_sphere");
@@ -126,8 +132,7 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		shapes.insert(shapes.end(), { red_sphere, green_sphere, blue_sphere });
 		lights.insert(lights.end(), { light });
 	}
-
-	if (scene_num == 3) {
+	else if (scene_num == 3) {
 		auto red_ellipsoid = make_shared<Ellipsoid>(glm::vec3(0.5f, 0.0f, 0.5f), glm::vec3(0.5f, 0.6f, 0.2f), red, "red_ellipsoid");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, green, "green_sphere");
 		auto plane = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "plane");
@@ -138,7 +143,7 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		shapes.insert(shapes.end(), { green_sphere, red_ellipsoid, plane });
 		lights.insert(lights.end(), { light1, light2 });
 	}
-	if (scene_num == 4 || scene_num == 5) {
+	else if (scene_num == 4 || scene_num == 5) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(0.5f, -0.7f, 0.5f), 0.3f, red, "red_sphere");
 		auto blue_sphere = make_shared<Sphere>(glm::vec3(1.0f, -0.7f, 0.0f), 0.3f, green, "blue_sphere");
 		auto floor = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "floor");
@@ -152,39 +157,31 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		shapes.insert(shapes.end(), { red_sphere, blue_sphere, floor, black_wall, reflective_sphere_1, reflective_sphere_2 });
 		lights.insert(lights.end(), { light1, light2 });
 	}
-	if (scene_num == 6 || scene_num == 7) {
-
-		vector<float> posBuf;
-		vector<float> norBuf;
-		vector<float> texBuf;
-
-		load_mesh("../resources/bunny.obj", posBuf, norBuf, texBuf);
-
-		//cout << posBuf.size() / 3 << endl;
-		//auto mesh = make_shared<Mesh>(posBuf, norBuf, texBuf);
-		//cout << mesh->posBuf.size() / 3 << endl;
-		//cout << mesh->b_pos << endl;
-		//cout << mesh->b_rad << endl;
-
+	else if (scene_num == 6) {
 		auto bunny = make_shared<Mesh>(posBuf, norBuf, texBuf, glm::vec3(0.0f, 0.0f, 0.0f), blue, "bunny");
-
-		cout << bunny->b_pos << endl;
-		cout << bunny->b_rad << endl;
-
-
-		/*auto red_sphere = make_shared<Sphere>(glm::vec3(0.5f, -0.7f, 0.5f), 0.3f, red, "red_sphere");
-		auto blue_sphere = make_shared<Sphere>(glm::vec3(1.0f, -0.7f, 0.0f), 0.3f, green, "blue_sphere");
-		auto floor = make_shared<Plane>(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), black, "floor");
-		auto black_wall = make_shared<Plane>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 1.0f), black, "black_wall");
-		auto reflective_sphere_1 = make_shared<Sphere>(glm::vec3(-0.5f, 0.0f, -0.5f), 1.0f, reflect, "reflective_sphere_1");
-		auto reflective_sphere_2 = make_shared<Sphere>(glm::vec3(1.5f, 0.0f, -1.5f), 1.0f, reflect, "reflective_sphere_2");*/
-
-		auto light1 = make_shared<Light>(glm::vec3(-1.0f, 1.0f, 1.0f), 1.0f);
-		//auto light2 = make_shared<Light>(glm::vec3(0.5f, -0.5f, 0.0f), 0.5f);
+		auto light = make_shared<Light>(glm::vec3(-1.0f, 1.0f, 1.0f), 1.0f);
 
 		shapes.insert(shapes.end(), { bunny });
-		lights.insert(lights.end(), { light1 });
+		lights.insert(lights.end(), { light });
 	}
+	else if (scene_num == 7) {
+		glm::mat4 E(1.0f);
+
+		E[0][0] = 1.5000;
+		E[1][1] = 1.4095;
+		E[1][2] = 0.5130;
+		E[2][1] = -0.5130;
+		E[2][2] = 1.4095;
+		E[3][0] = 0.3000;
+		E[3][1] = -1.5000;
+
+		auto bunny = make_shared<Mesh>(posBuf, norBuf, texBuf, E, blue, "bunny");
+		auto light = make_shared<Light>(glm::vec3(1.0f, 1.0f, 2.0f), 1.0f);
+
+		shapes.insert(shapes.end(), { bunny });
+		lights.insert(lights.end(), { light });
+	}
+
 
 	auto scene = make_shared<Scene>(shapes, lights);
 	return scene;

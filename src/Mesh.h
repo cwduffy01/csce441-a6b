@@ -12,9 +12,13 @@ public:
 	glm::vec3 b_pos;
 	float b_rad;
 
-	Mesh();
+	glm::mat4 E;
+	glm::mat4 E_inv;
+	glm::mat4 E_inv_tr;
+
 	Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf);
 	Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::vec3 position, shared_ptr<Material> material, string name);
+	Mesh(vector<float>& posBuf, vector<float>& norBuf, vector<float>& texBuf, glm::mat4 E, shared_ptr<Material> material, string name);
 
 	shared_ptr<Hit> intersect(Ray& r, float start_t, float end_t);
 
