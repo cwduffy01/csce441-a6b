@@ -225,8 +225,6 @@ shared_ptr<Hit> Mesh::intersect(Ray& r, float start_t, float end_t) {
             return nullptr;
         }
 
-        //glm::vec3 x = glm::vec3(E * 
-
         glm::vec3 x = glm::vec3(E * glm::vec4(min_x_prime, 1.0f));
         glm::vec3 n = normalize(glm::vec3(E_inv_tr * glm::vec4(min_n_prime, 0.0f)));
         float t = length(x - r.p);

@@ -2,6 +2,8 @@
 #include <string>
 #include <limits>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
@@ -122,7 +124,7 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 
 	load_mesh("../resources/bunny.obj", posBuf, norBuf, texBuf);
 
-	if (scene_num == 1 || scene_num == 2) {
+	if (scene_num == 1 || scene_num == 2 || scene_num == 8) {
 		auto red_sphere = make_shared<Sphere>(glm::vec3(-0.5f, -1.0f, 1.0f), 1.0f, red, "red_sphere");
 		auto green_sphere = make_shared<Sphere>(glm::vec3(0.5f, -1.0f, -1.0f), 1.0f, green, "green_sphere");
 		auto blue_sphere = make_shared<Sphere>(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, blue, "blue_sphere");
@@ -175,6 +177,8 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 		E[3][0] = 0.3000;
 		E[3][1] = -1.5000;
 
+		cout << E << endl;
+
 		auto bunny = make_shared<Mesh>(posBuf, norBuf, texBuf, E, blue, "bunny");
 		auto light = make_shared<Light>(glm::vec3(1.0f, 1.0f, 2.0f), 1.0f);
 
@@ -187,13 +191,42 @@ shared_ptr<Scene> setup_scene(int scene_num) {
 	return scene;
 }
 
-glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, float start_t, float end_t, int depth) {
+shared_ptr<Camera> setup_camera(int scene_num, int width, int height) {
+	shared_ptr<Camera> camera;
+
+	if (scene_num != 8) {
+		camera = make_shared<Camera>(
+			glm::vec3(0.0f, 0.0f, 5.0f),
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			45.0f * (M_PI / 180.0),
+			1.0f,
+			width,
+			height
+		);
+	}
+	else if (scene_num == 8) {
+		camera = make_shared<Camera>(
+			glm::vec3(-3.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			60.0f * (M_PI / 180.0),
+			1.0f,
+			width,
+			height
+		);
+	}
+
+	return camera;
+}
+
+glm::vec3 compute_ray_color(shared_ptr<Scene> scene, shared_ptr<Camera> camera, Ray& ray, float start_t, float end_t, int depth) {
 	glm::vec3 color(0.0f, 0.0f, 0.0f);
 	shared_ptr<Hit> hit = scene->hit(ray, start_t, end_t);
 	if (hit != nullptr) {
 		color += hit->material->ambient;
 
-		glm::vec3 e = glm::normalize(cam.eye - hit->x);
+		glm::vec3 e = glm::normalize(camera->eye - hit->x);
 		for (auto light : scene->lights) {
 			glm::vec3 l = normalize(light->position - hit->x);
 			glm::vec3 h = glm::normalize(e + l);
@@ -221,7 +254,7 @@ glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, floa
 		if (hit->material->reflective && depth < 7) {
 			glm::vec3 ref_v = ray.v - (2 * glm::dot(ray.v, hit->n) * hit->n);
 			Ray reflect(hit->x, ref_v);
-			color += 0.7f * compute_ray_color(scene, cam, reflect, 1e-4, end_t, depth + 1);
+			color += 0.7f * compute_ray_color(scene, camera, reflect, 1e-4, end_t, depth + 1);
 		}
 	}
 
@@ -236,50 +269,38 @@ glm::vec3 compute_ray_color(shared_ptr<Scene> scene, Camera& cam, Ray& ray, floa
 
 int main(int argc, char **argv)
 {
-	//int scene_num = stoi(argv[1]);
+	int scene_num = stoi(argv[1]);
+	int width = stoi(argv[2]);
+	int height = stoi(argv[3]);
 	string filename = string(argv[4]);
 
-	Camera cam(
-		glm::vec3(0.0f, 0.0f, 5.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		45.0f * (M_PI / 180.0),
-		1.0f,
-		stoi(argv[2]),
-		stoi(argv[3])
-	);
-
-	auto img = make_shared<Image>(cam.width, cam.height);
-
-	auto scene = setup_scene(stoi(argv[1]));
+	auto camera = setup_camera(scene_num, width, height);
 
 
-	//auto plane = scene->shapes.at(0);
-	//cout << plane->position << endl;
-	//Ray ray(
-	//	glm::vec3(0.0f, 0.0f, 0.0f),
-	//	glm::vec3(0.0f, -1.0f, 0.0f)
-	//);
-	//auto hit = plane->intersect(ray, 0, numeric_limits<float>::infinity());
-	//if (hit != nullptr) {
-	//	cout << hit->x << endl;
-	//}
+	auto img = make_shared<Image>(width, height);
+
+	auto scene = setup_scene(scene_num);
 
 
+	float world_height = 2 * camera->focal_dist * tan(camera->fovy / 2);
+	float pixel_size = world_height / camera->height;
 
-	float world_height = 2 * cam.focal_dist * tan(cam.fovy / 2);
-	float pixel_size = world_height / cam.height;
+	for (int j = 0; j < camera->height; j++) {
+		for (int i = 0; i < camera->width; i++) {
+			float x = -camera->width / 2.0 + (i + 0.5);
+			float y = -camera->height / 2.0 + (j + 0.5);
 
-	for (int j = 0; j < cam.height; j++) {
-		for (int i = 0; i < cam.width; i++) {
-			float x = -cam.width / 2.0 + (i + 0.5);
-			float y = -cam.height / 2.0 + (j + 0.5);
+			//glm::vec3 v = normalize(glm::vec3(pixel_size * x, pixel_size * y, -1.0));
+			//glm::vec3 v = normalize(glm::vec3(1.0, pixel_size * y, pixel_size * x));
 
-			glm::vec3 v = normalize(glm::vec3(pixel_size * x, pixel_size * y, -1.0));
+			glm::vec3 v = glm::normalize(camera->lookat - camera->eye) * camera->focal_dist;
+			v += pixel_size * y * glm::normalize(camera->up);
+			glm::vec3 right = glm::cross((camera->lookat - camera->eye), camera->up);
+			v += pixel_size * x * glm::normalize(right);
 
-			Ray r(cam.eye, v);
+			Ray r(camera->eye, normalize(v));
 
-			glm::vec3 color = 255.0f * compute_ray_color(scene, cam, r, 0, numeric_limits<float>::infinity(), 0);
+			glm::vec3 color = 255.0f * compute_ray_color(scene, camera, r, 0, numeric_limits<float>::infinity(), 0);
 			img->setPixel(i, j, (int)color.r, (int)color.g, (int)color.b);
 		}
 	}

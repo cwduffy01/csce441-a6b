@@ -6,5 +6,6 @@
 using namespace std;
 
 ostream& operator<<(ostream& os, const glm::vec3& v);
+ostream& operator<<(ostream& os, const glm::mat4& M);
 
 #endif
